@@ -1,13 +1,17 @@
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Serialization;
+using Server;
 using Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+builder.Services.AddDbContext<GameDBContext>(o => o.UseSqlServer(builder.Configuration.GetConnectionString("Db")));
+
 builder.Services.AddControllers().AddNewtonsoftJson(o =>
 {
-    o.SerializerSettings.ContractResolver = new DefaultContractResolver();
+    
 });
 
 builder.Services.AddScoped<IProfileService, MockProfileService>();
