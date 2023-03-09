@@ -9,9 +9,22 @@ namespace Server.Controllers
     public class ProfileController : ControllerBase
     {
         private readonly IProfileService _profileService;
-        public ProfileController(IProfileService profileService)
+        private readonly GameDBContext _gameDBContext;
+        public ProfileController(IProfileService profileService, GameDBContext gameDBContext)
         {
             _profileService = profileService;
+            _gameDBContext = gameDBContext;
+
+            var user = new User()
+            {
+                Username = "Misha",
+                PasswordHash = "SomePassword",
+                Salt = "something there"
+            };
+
+            _gameDBContext.Add(user);
+
+            _gameDBContext.SaveChanges();
         }
 
         [HttpGet("{id}")]
