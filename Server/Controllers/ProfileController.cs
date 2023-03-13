@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using Server.Services;
 using SharedLibrary;
 using SharedLibrary.Requests;
@@ -18,17 +19,6 @@ namespace Server.Controllers
         {
             _profileService = profileService;
             _gameDBContext = gameDBContext;
-
-            var user = new User()
-            {
-                Username = "Misha",
-                PasswordHash = "SomePassword",
-                Salt = "something there"
-            };
-
-            _gameDBContext.Add(user);
-
-            _gameDBContext.SaveChanges();
         }
 
         [HttpGet("{id}")]
@@ -39,6 +29,22 @@ namespace Server.Controllers
             _profileService.DoSomething();
 
             return profile;
+        }
+
+        [HttpPost("{id}")]
+        public IActionResult Edit([FromRoute] int id,[FromBody] CreateProfileRequest request)
+        {
+            var profileIdsAvailable = JsonConvert.DeserializeObject<List<int>>(User.FindFirst("profiles").Value);
+
+            if (!profileIdsAvailable.Contains(id)) return Unauthorized();
+
+            var profile = _gameDBContext.Profiles.First(p => p.ID == id);
+
+            profile.Name = request.Name;
+
+            _gameDBContext.SaveChanges();
+
+            return Ok();
         }
 
         [HttpPost]
@@ -56,6 +62,8 @@ namespace Server.Controllers
 
             _gameDBContext.Add(profile);
             _gameDBContext.SaveChanges();
+
+            profile.User = null;
 
             return profile;
         }

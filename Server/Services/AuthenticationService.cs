@@ -1,10 +1,13 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using Server.Models;
 using SharedLibrary;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Server.Services
 {
@@ -34,7 +37,7 @@ namespace Server.Services
 
         public (bool success, string token) Login(string username, string password)
         {
-            var user = _gameDBContext.Users.SingleOrDefault(u => u.Username == username);
+            var user = _gameDBContext.Users.Include(u=>u.ProfileList).SingleOrDefault(u => u.Username == username);
             if (user == null) return (false, "Invalid username");
 
             if (user.PasswordHash != AuthenticationHelpers.ComputeHash(password, user.Salt)) return (false, "Invalid password");
@@ -47,7 +50,8 @@ namespace Server.Services
         {
             var subject = new ClaimsIdentity(new[]
             {
-                new Claim("id", user.Id.ToString())
+                new Claim("id", user.Id.ToString()),
+                new Claim("profiles", JsonConvert.SerializeObject(user.ProfileList.Select(p=>p.ID)))
             });
 
             return subject; 
