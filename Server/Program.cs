@@ -1,8 +1,12 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Serialization;
 using Server;
 using Server.Models;
 using Server.Services;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Newtonsoft.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,11 +20,22 @@ builder.Services.AddDbContext<GameDBContext>(o => o.UseSqlServer(builder.Configu
 
 builder.Services.AddControllers().AddNewtonsoftJson(o =>
 {
-    
+    o.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
 });
 
-builder.Services.AddScoped<IProfileService, MockProfileService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o =>
+{
+    o.TokenValidationParameters = new TokenValidationParameters()
+    {
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(settings.BearerKey)),
+        ValidateIssuerSigningKey = true,
+        ValidateAudience = false,
+        ValidateIssuer = false
+    };
+});
 
 var app = builder.Build();
 
@@ -32,7 +47,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
 app.UseAuthorization();
+app.UseAuthentication();
 
 app.MapControllers();
 

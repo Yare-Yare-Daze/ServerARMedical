@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Server.Services;
 using SharedLibrary;
+using SharedLibrary.Requests;
 
 namespace Server.Controllers
 {
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ApiController]
     [Route("[controller]")]
     public class ProfileController : ControllerBase
@@ -38,9 +42,21 @@ namespace Server.Controllers
         }
 
         [HttpPost]
-        public Profile Post(Profile profile) 
+        public Profile Post(CreateProfileRequest request) 
         {
-            Console.WriteLine("Profile has been added to the DB");
+            var userId = int.Parse(User.FindFirst("id").Value);
+
+            var user = _gameDBContext.Users.Include(u => u.ProfileList).First(u => u.Id == userId);
+
+            var profile = new Profile()
+            {
+                Name = request.Name,
+                User = user
+            };
+
+            _gameDBContext.Add(profile);
+            _gameDBContext.SaveChanges();
+
             return profile;
         }
     }
